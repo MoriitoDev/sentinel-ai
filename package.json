@@ -1,0 +1,31 @@
+{
+  "name": "sentinel-ai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "scan": "npx tsx src/main.ts",
+    "scan:deep": "npx tsx src/main.ts --deep",
+    "guard": "npx tsx src/guard.ts",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@catppuccin/vitepress": "^0.1.2",
+    "@types/node": "^25.7.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitepress": "^1.6.4"
+  },
+  "dependencies": {
+    "@swc/core": "^1.15.33",
+    "fast-glob": "^3.3.3"
+  }
+}
