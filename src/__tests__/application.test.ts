@@ -3,6 +3,7 @@ import { buildOriginMap } from '../application/services/OriginTracker';
 import { ScanProjectUseCase } from '../application/ScanProjectUseCase';
 import type { IScanner, IFileSystemReader, IVersionResolver, INpmClient, IOsvClient } from '../domain/repositories';
 import type { LockEntry } from '../domain/entities';
+import { DEFAULT_CONFIG } from '../domain/config';
 
 describe('buildOriginMap', () => {
   it('maps transitive deps to their direct parent', () => {
@@ -83,6 +84,7 @@ describe('ScanProjectUseCase', () => {
       mockVersionResolver,
       mockNpmClient,
       mockOsvClient,
+      DEFAULT_CONFIG,
     );
   });
 

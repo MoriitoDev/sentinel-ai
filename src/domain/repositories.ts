@@ -1,7 +1,7 @@
 import type { PackageMetadata, Vulnerability, LockEntry } from './entities';
 
 export interface IScanner {
-    scan(pattern: string): Promise<string[]>;
+    scan(pattern: string, ignorePatterns?: string[]): Promise<string[]>;
 }
 
 export interface IFileSystemReader {

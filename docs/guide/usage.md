@@ -7,6 +7,9 @@
 | `--deep` | `-d` | Enable full vulnerability scan (age check + OSV + transitive deps) | off |
 | `--concurrency` | `-c` | Max parallel npm registry requests | `5` |
 | `--include-dev` | `-i` | Include dev-only transitive dependencies in deep mode | off |
+| `--output` | `-o` | Save report to file (always prints to console too) | — |
+| `--format` | `-f` | Output format: `text` (ANSI) or `json` | `text` |
+| `--verbose` | `-v` | Enable debug logging to stderr | off |
 
 ## Modes
 
@@ -52,6 +55,56 @@ npx tsx src/main.ts --concurrency 2
 
 # Fast for large projects
 npx tsx src/main.ts --deep --concurrency 20
+```
+
+### Output to file (`--output PATH`)
+
+Saves a copy of the report to a file while still printing the colorized output to the console. The file format depends on `--format`:
+
+- **`text`** (default) — plain text without ANSI codes, suitable for diffs and CI logs
+- **`json`** — structured JSON with summary, reports, and vulnerabilities
+
+```bash
+# Plain text report
+npx tsx src/main.ts --output report.txt
+
+# JSON report with full deep scan
+npx tsx src/main.ts --deep --format json --output report.json
+```
+
+### JSON output (`--format json`)
+
+Prints the report as structured JSON instead of the colorized table. Useful for programmatic consumption or CI pipelines.
+
+```bash
+# JSON to stdout
+npx tsx src/main.ts --deep --format json
+
+# JSON to file (console still shows colorized output)
+npx tsx src/main.ts --deep --format json --output report.json
+```
+
+### Verbose logging (`--verbose`)
+
+Enables debug-level logging to stderr for troubleshooting:
+
+```bash
+npx tsx src/main.ts --verbose
+```
+
+## Configuration file
+
+Sentinel-AI reads settings from `.sentinelrc.json` in the project root. If the file does not exist, defaults are used. CLI flags always override config file values.
+
+```json
+{
+  "scanPatterns": ["src/**/*.{ts,js,tsx,jsx}"],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**"],
+  "newPackageThresholdHours": 72,
+  "concurrency": 5,
+  "includeDev": false,
+  "outputFormat": "text"
+}
 ```
 
 ## How version resolution works

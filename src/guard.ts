@@ -1,7 +1,6 @@
-import { NpmHttpClient } from './infrastructure/NpmHttpClient';
-import { OsvHttpClient } from './infrastructure/OsvHttpClient';
-import { GuardUseCase, type GuardVerdict } from './guard/GuardUseCase';
+import { createContainer } from './container';
 import { isMaliciousEntry } from './domain/entities';
+import type { GuardVerdict } from './guard/GuardUseCase';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
@@ -62,13 +61,11 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
-    const npmClient = new NpmHttpClient();
-    const osvClient = new OsvHttpClient();
-    const useCase = new GuardUseCase(npmClient, osvClient);
+    const container = createContainer();
 
     process.stdout.write(`${c.bold('sentinel guard')} ${c.dim(`\u2014 checking ${rawNames.length} package${rawNames.length === 1 ? '' : 's'}`)}\n\n`);
 
-    const verdicts = await useCase.execute(rawNames);
+    const verdicts = await container.guardUseCase.execute(rawNames);
 
     for (const v of verdicts) {
         console.log(formatVerdict(v));

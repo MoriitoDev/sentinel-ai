@@ -9,6 +9,7 @@ vi.mock('@swc/core', () => ({ parse: vi.fn() }));
 import { readFile } from 'fs/promises';
 import globMock from 'fast-glob';
 import * as swc from '@swc/core';
+import type { IFileSystemReader } from '../domain/repositories';
 import { FileSystemReader } from '../infrastructure/FileSystemReader';
 import { SwcScanner } from '../infrastructure/SwcScanner';
 import { VersionResolver } from '../infrastructure/VersionResolver';
@@ -190,6 +191,22 @@ describe('SwcScanner', () => {
     expect(deps).toEqual(['express']);
   });
 
+  it('ignores node: prefixed built-in module imports', async () => {
+    vi.mocked(globMock).mockResolvedValue(['src/index.ts']);
+    vi.mocked(readFile).mockResolvedValue('import fs from "node:fs";\nimport { join } from "node:path";\nimport express from "express";\n');
+    vi.mocked(swc.parse).mockResolvedValue({
+      body: [
+        { type: 'ImportDeclaration', source: { value: 'node:fs' } },
+        { type: 'ImportDeclaration', source: { value: 'node:path' } },
+        { type: 'ImportDeclaration', source: { value: 'express' } },
+      ],
+    } as any);
+
+    const deps = await scanner.scan('src/**/*.ts');
+
+    expect(deps).toEqual(['express']);
+  });
+
   it('deduplicates repeated imports of the same package', async () => {
     vi.mocked(globMock).mockResolvedValue(['src/a.ts', 'src/b.ts']);
     vi.mocked(readFile).mockResolvedValue('import express from "express";\n');
@@ -233,10 +250,10 @@ describe('SwcScanner', () => {
 // =============================================================================
 describe('VersionResolver', () => {
   const mockGetPackageLock = vi.fn() as ReturnType<typeof vi.fn> & (() => Promise<Map<string, LockEntry>>);
-  const mockReader = {
+  const mockReader: IFileSystemReader = {
     getDeclaredDependencies: vi.fn(),
     getPackageLock: mockGetPackageLock,
-  } as unknown as FileSystemReader;
+  };
   let resolver: VersionResolver;
 
   beforeEach(() => {

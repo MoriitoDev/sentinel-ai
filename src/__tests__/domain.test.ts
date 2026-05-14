@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   isMaliciousEntry,
   isPackageTooNew,
+  isNodeBuiltin,
   NEW_PACKAGE_THRESHOLD_HOURS,
   NODE_BUILTIN_MODULES,
 } from '../domain/entities';
@@ -74,5 +75,38 @@ describe('constants', () => {
 
   it('NODE_BUILTIN_MODULES includes the node: prefixed test module', () => {
     expect(NODE_BUILTIN_MODULES.has('node:test')).toBe(true);
+  });
+});
+
+describe('isNodeBuiltin', () => {
+  it('returns true for plain built-in names', () => {
+    expect(isNodeBuiltin('fs')).toBe(true);
+    expect(isNodeBuiltin('path')).toBe(true);
+    expect(isNodeBuiltin('crypto')).toBe(true);
+  });
+
+  it('returns true for node: prefixed built-in names', () => {
+    expect(isNodeBuiltin('node:fs')).toBe(true);
+    expect(isNodeBuiltin('node:path')).toBe(true);
+    expect(isNodeBuiltin('node:process')).toBe(true);
+    expect(isNodeBuiltin('node:readline')).toBe(true);
+  });
+
+  it('returns false for external package names', () => {
+    expect(isNodeBuiltin('express')).toBe(false);
+    expect(isNodeBuiltin('lodash')).toBe(false);
+  });
+
+  it('returns false for node: prefixed non-builtin names', () => {
+    expect(isNodeBuiltin('node:express')).toBe(false);
+    expect(isNodeBuiltin('node:fake-module')).toBe(false);
+  });
+
+  it('returns true for node:test', () => {
+    expect(isNodeBuiltin('node:test')).toBe(true);
+  });
+
+  it('handles empty string', () => {
+    expect(isNodeBuiltin('')).toBe(false);
   });
 });

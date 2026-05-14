@@ -141,4 +141,16 @@ describe('GuardUseCase', () => {
     }
     expect(mockOsvClient.queryBatch).not.toHaveBeenCalled();
   });
+
+  it('recognizes node: prefixed built-in modules without querying npm', async () => {
+    const verdicts = await guard.execute(['node:fs', 'node:path']);
+
+    expect(verdicts).toHaveLength(2);
+    for (const v of verdicts) {
+      expect(v.exists).toBe(true);
+      expect(v.error).toBeNull();
+    }
+    expect(mockNpmClient.fetchAll).toHaveBeenCalledWith([], 0);
+    expect(mockOsvClient.queryBatch).not.toHaveBeenCalled();
+  });
 });

@@ -26,7 +26,7 @@ A package that **exists on npm** but is **not declared in `package.json`**. This
 
 ## Node.js Built-in Modules
 
-Packages like `fs`, `path`, `crypto` are Node.js runtime modules, not npm packages. Sentinel-AI automatically filters them out to avoid false positives.
+Packages like `fs`, `path`, `crypto` are Node.js runtime modules, not npm packages. Sentinel-AI automatically filters them out to avoid false positives. Both plain names (`fs`) and the `node:` prefixed form (`node:fs`) are recognized and ignored.
 
 List includes: `fs`, `path`, `crypto`, `http`, `https`, `net`, `tls`, `os`, `child_process`, `url`, `buffer`, `stream`, `util`, `events`, and more.
 

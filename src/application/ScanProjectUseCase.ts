@@ -2,6 +2,7 @@ import {
     isPackageTooNew,
     type CliOptions, type PackageReport, type TransitiveVulnReport, type Vulnerability,
 } from '../domain/entities';
+import type { SentinelConfig } from '../domain/config';
 import type {
     IScanner, IFileSystemReader, IVersionResolver, INpmClient, IOsvClient,
 } from '../domain/repositories';
@@ -20,16 +21,19 @@ export class ScanProjectUseCase {
         private versionResolver: IVersionResolver,
         private npmClient: INpmClient,
         private osvClient: IOsvClient,
+        private config: SentinelConfig,
     ) {}
 
     async execute(options: CliOptions): Promise<ScanResult> {
         const startTime = Date.now();
 
-        const usedDeps = await this.scanner.scan('src/**/*.{ts,js,tsx,jsx}');
+        const globPattern = `{${this.config.scanPatterns.join(',')}}`;
+        const usedDeps = await this.scanner.scan(globPattern, this.config.ignorePatterns);
 
         const declaredDeps = await this.fileReader.getDeclaredDependencies();
 
-        const metadataResults = await this.npmClient.fetchAll(usedDeps, options.concurrency);
+        const effectiveConcurrency = options.concurrency ?? this.config.concurrency;
+        const metadataResults = await this.npmClient.fetchAll(usedDeps, effectiveConcurrency);
 
         const reports: PackageReport[] = [];
         const osvEntries: Array<{ name: string; version: string | null }> = [];
@@ -52,7 +56,7 @@ export class ScanProjectUseCase {
                 reports.push({
                     name, isDeclared, isHallucination: false,
                     metadata: meta, installedVersion,
-                    vulnerabilities: [], isTooNew: isPackageTooNew(meta.createdAt),
+                    vulnerabilities: [], isTooNew: isPackageTooNew(meta.createdAt, this.config.newPackageThresholdHours),
                 });
                 osvEntries.push({ name, version: installedVersion });
             }
@@ -64,11 +68,12 @@ export class ScanProjectUseCase {
         const directPkgs = new Set([...usedDeps, ...declaredDeps]);
 
         if (options.deepScan) {
+            const effectiveIncludeDev = options.includeDev ?? this.config.includeDev;
             for (const [key, entry] of lock.entries()) {
                 if (!key) continue;
                 const pkgName = key.replace('node_modules/', '');
                 if (directPkgs.has(pkgName)) continue;
-                if (entry.dev && !options.includeDev) continue;
+                if (entry.dev && !effectiveIncludeDev) continue;
                 allTransitive.push({ name: pkgName, version: entry.version || null });
             }
 

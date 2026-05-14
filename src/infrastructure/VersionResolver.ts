@@ -1,10 +1,9 @@
-import type { IVersionResolver } from '../domain/repositories';
+import type { IVersionResolver, IFileSystemReader } from '../domain/repositories';
 import type { LockEntry } from '../domain/entities';
-import { FileSystemReader } from './FileSystemReader';
 import * as fs from 'fs/promises';
 
 export class VersionResolver implements IVersionResolver {
-    constructor(private fileReader: FileSystemReader) {}
+    constructor(private fileReader: IFileSystemReader) {}
 
     async getInstalledVersion(pkgName: string): Promise<string | null> {
         const lock = await this.fileReader.getPackageLock();

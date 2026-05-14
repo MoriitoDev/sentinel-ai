@@ -1,6 +1,6 @@
 import type { INpmClient, IOsvClient } from '../domain/repositories';
 import type { Vulnerability } from '../domain/entities';
-import { isPackageTooNew, isMaliciousEntry, NODE_BUILTIN_MODULES } from '../domain/entities';
+import { isPackageTooNew, isMaliciousEntry, isNodeBuiltin } from '../domain/entities';
 
 export interface GuardVerdict {
     name: string;
@@ -34,7 +34,7 @@ export class GuardUseCase {
         const toCheck: Array<{ name: string; version: string | null }> = [];
 
         for (const p of parsed) {
-            if (NODE_BUILTIN_MODULES.has(p.name)) {
+            if (isNodeBuiltin(p.name)) {
                 verdicts.push({
                     name: p.name,
                     requestedVersion: p.version,

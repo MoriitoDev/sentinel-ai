@@ -43,8 +43,11 @@ export interface LockEntry {
 
 export interface CliOptions {
     deepScan: boolean;
-    concurrency: number;
-    includeDev: boolean;
+    concurrency?: number;
+    includeDev?: boolean;
+    verbose?: boolean;
+    format?: 'text' | 'json';
+    outputFile?: string;
 }
 
 export interface TransitiveVulnReport {
@@ -55,12 +58,18 @@ export interface TransitiveVulnReport {
     parents: string[];
 }
 
+export function isNodeBuiltin(name: string): boolean {
+    if (NODE_BUILTIN_MODULES.has(name)) return true;
+    const stripped = name.startsWith('node:') ? name.slice(5) : null;
+    return stripped ? NODE_BUILTIN_MODULES.has(stripped) : false;
+}
+
 export function isMaliciousEntry(vuln: Vulnerability): boolean {
     return (vuln.id || '').startsWith('MAL-');
 }
 
-export function isPackageTooNew(createdAt: string): boolean {
+export function isPackageTooNew(createdAt: string, thresholdHours: number = NEW_PACKAGE_THRESHOLD_HOURS): boolean {
     if (!createdAt) return false;
     const ageHours = (Date.now() - new Date(createdAt).getTime()) / 3600000;
-    return ageHours < NEW_PACKAGE_THRESHOLD_HOURS;
+    return ageHours < thresholdHours;
 }

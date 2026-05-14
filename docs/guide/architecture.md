@@ -5,28 +5,31 @@ Sentinel-AI follows **Clean Architecture** with 4 layers, each with a single res
 ## Layer overview
 
 ```
-┌─────────────────────────────────────────────────┐
-│                    CLI Layer                      │
-│    CliParser.ts    AnsiFormatter.ts    main.ts    │
-├─────────────────────────────────────────────────┤
-│                 Application Layer                 │
-│    ScanProjectUseCase.ts    services/             │
-├─────────────────────────────────────────────────┤
-│               Infrastructure Layer                │
-│  SwcScanner  FileSystemReader  VersionResolver    │
-│  NpmHttpClient    OsvHttpClient                   │
-├─────────────────────────────────────────────────┤
-│                  Domain Layer                      │
-│    entities.ts    repositories.ts                 │
-└─────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                       CLI Layer                              │
+│  CliParser.ts  AnsiFormatter.ts  JsonFormatter.ts            │
+│  TextFormatter.ts  main.ts  guard.ts                         │
+├────────────────────────────────────────────────────────────┤
+│                    Application Layer                          │
+│  ScanProjectUseCase.ts  GuardUseCase.ts  services/            │
+│  container.ts                                                │
+├────────────────────────────────────────────────────────────┤
+│                  Infrastructure Layer                         │
+│  SwcScanner  FileSystemReader  VersionResolver               │
+│  NpmHttpClient  OsvHttpClient  Logger  ConfigLoader           │
+├────────────────────────────────────────────────────────────┤
+│                     Domain Layer                              │
+│  entities.ts  repositories.ts  config.ts                     │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ## Domain Layer
 
 Defines the enterprise business rules — pure types, interfaces, and helper functions with zero external dependencies.
 
-- **`entities.ts`** — `PackageMetadata`, `PackageReport`, `Vulnerability`, `LockEntry`, `CliOptions`, `TransitiveVulnReport`, plus helper functions like `isMaliciousEntry()` and `isPackageTooNew()`. Also exports the `NODE_BUILTIN_MODULES` constant set.
+- **`entities.ts`** — `PackageMetadata`, `PackageReport`, `Vulnerability`, `LockEntry`, `CliOptions`, `TransitiveVulnReport`, plus helper functions like `isMaliciousEntry()`, `isPackageTooNew()`, and `isNodeBuiltin()`. Also exports the `NODE_BUILTIN_MODULES` constant set.
 - **`repositories.ts`** — Interface contracts (TypeScript interfaces) for each external dependency: `IScanner`, `IFileSystemReader`, `IVersionResolver`, `INpmClient`, `IOsvClient`.
+- **`config.ts`** — `SentinelConfig` interface, default values, and `loadConfig()` that reads `.sentinelrc.json` from the project root.
 
 ## Infrastructure Layer
 
@@ -81,51 +84,71 @@ Parses arguments and presents results.
 
 ### CliParser
 - Reads `process.argv` and returns a `CliOptions` object
-- Supports `--deep`/`-d`, `--concurrency`/`-c VALUE`, `--include-dev`/`-i`
+- Supports `--deep`/`-d`, `--concurrency`/`-c VALUE`, `--include-dev`/`-i`, `--output`/`-o PATH`, `--format`/`-f text|json`, `--verbose`/`-v`
 
 ### AnsiFormatter
 - Colors output with ANSI escape codes (zero external deps)
 - Groups results into sections: AI HALLUCINATIONS (red), SHADOW CODE (orange), VULNERABILITIES — Direct (yellow), TRANSITIVE VULNERABILITIES (yellow), CLEAN (green)
 
+### JsonFormatter
+- Serializes `ScanResult` into structured JSON with summary, reports, and vulnerability details
+
+### TextFormatter
+- Produces the same report layout as AnsiFormatter but without ANSI codes — used for plain text file output
+
 ### main.ts
-The entry point. Wires all dependencies together and kicks off the use case:
+The entry point. Loads configuration from `.sentinelrc.json`, merges it with CLI arguments, resolves dependencies via the container, and runs the scan:
 
 ```ts
-const scanner = new SwcScanner();
-const fileReader = new FileSystemReader();
-const versionResolver = new VersionResolver(fileReader);
-const npmClient = new NpmHttpClient();
-const osvClient = new OsvHttpClient();
+const fileConfig = loadConfig();
+const cliArgs = parseCliArgs(process.argv.slice(2));
+const container = createContainer(fileConfig);
 
-const useCase = new ScanProjectUseCase(
-    scanner, fileReader, versionResolver, npmClient, osvClient,
-);
-
-useCase.execute(options).then(result => {
-    printReport(result, options);
+container.scanUseCase.execute(options).then(result => {
+    if (options.format === 'json') {
+        const json = formatJsonReport(result, options);
+        console.log(json);
+    } else {
+        printReport(result, options);
+    }
+    if (options.outputFile) {
+        const plain = formatTextReport(result, options);
+        writeFileSync(options.outputFile, plain, 'utf-8');
+    }
 });
 ```
 
 ## Execution flow
 
 ```
-main.ts
-  │
-  ├─ CliParser → CliOptions
-  │
-  ├─ SwcScanner.scan()          → package names from imports
-  ├─ FileSystemReader           → declared deps from package.json
-  │
-  ├─ NpmHttpClient              → metadata per package (concurrency-limited)
-  │
-  ├─ VersionResolver            → exact installed version
-  │
-  ├─ (deep mode)
-  │   ├─ FileSystemReader       → all transitive deps from lock file
-  │   ├─ OriginTracker          → parent map for each transitive dep
-  │   └─ OsvHttpClient          → batch vuln query (single request)
-  │
-  └─ AnsiFormatter.printReport()
+.sentinelrc.json ──→ loadConfig() ──→ SentinelConfig
+                                          │
+process.argv ──→ CliParser ──→ CliOptions │
+                                      │   │
+                                      ▼   ▼
+                               merged options
+                                      │
+                            createContainer(config)
+                                      │
+                                      ▼
+                          ScanProjectUseCase.execute()
+                                      │
+                                      ├─ SwcScanner.scan()          → package names
+                                      ├─ FileSystemReader           → declared deps
+                                      ├─ NpmHttpClient              → metadata (concurrency-limited)
+                                      ├─ VersionResolver            → exact installed version
+                                      │
+                                      ├─ (deep mode)
+                                      │   ├─ FileSystemReader       → transitive deps from lock
+                                      │   ├─ OriginTracker          → parent map
+                                      │   └─ OsvHttpClient          → batch vuln query
+                                      │
+                                      ▼
+                                 ScanResult
+                                      │
+                                      ├─ format === 'json' → JsonFormatter → stdout + file
+                                      └─ format === 'text' → AnsiFormatter → stdout
+                                                              TextFormatter → file (if --output)
 ```
 
 ## Data flow

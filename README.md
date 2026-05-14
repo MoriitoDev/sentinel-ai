@@ -10,7 +10,7 @@ A CLI tool to prevent **AI slopsquatting** (hallucinated package imports) and de
 - **Malicious Package Alerts** — warns on packages with known malware (MAL-* entries)
 - **Package Age Check** — flags suspiciously new packages (< 72 hours on npm)
 - **Pre-Install Guard** — intercepts `npm install` to block hallucinated or vulnerable packages before they reach your disk
-- **Node.js Built-in Filter** — ignores `fs`, `path`, `crypto`, and other runtime modules
+- **Node.js Built-in Filter** — ignores `fs`, `path`, `crypto`, `node:fs`, `node:path`, and other runtime modules
 - **Concurrent Requests** — configurable parallelism + retry with exponential backoff
 
 ## Quick Start
@@ -34,6 +34,9 @@ npm run scan:deep
 | `--deep` | `-d` | Enable full scanning (age + vulns + transitive deps) | off |
 | `--concurrency` | `-c` | Max parallel requests to npm | `5` |
 | `--include-dev` | `-i` | Include dev-only transitive deps in deep mode | off |
+| `--output` | `-o` | Save report to file (plain text or JSON, console still shows) | — |
+| `--format` | `-f` | Output format: `text` (ANSI) or `json` | `text` |
+| `--verbose` | `-v` | Enable debug logging | off |
 
 ### Standard mode
 
@@ -73,6 +76,32 @@ npx tsx src/main.ts --deep --concurrency 10
 
 ────────────────────────────────────────────────────────
 ```
+
+### Output to file
+
+```bash
+# Default text report (no ANSI codes)
+npm run scan -- --output report.txt
+
+# JSON report
+npm run scan:deep -- --format json --output report.json
+```
+
+The console always shows the colorized output. The file receives a clean copy.
+
+### Configuration file
+
+Create `.sentinelrc.json` in the project root to set defaults:
+
+```json
+{
+  "concurrency": 10,
+  "includeDev": true,
+  "outputFormat": "json"
+}
+```
+
+CLI flags always override config file values.
 
 ## Documentation
 

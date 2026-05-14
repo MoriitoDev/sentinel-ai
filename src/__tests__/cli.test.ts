@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseCliArgs } from '../cli/CliParser';
 import { printReport } from '../cli/AnsiFormatter';
+import { formatJsonReport } from '../cli/JsonFormatter';
+import { formatTextReport } from '../cli/TextFormatter';
 import type { ScanResult } from '../application/ScanProjectUseCase';
 
 describe('parseCliArgs', () => {
   it('returns defaults when no args are given', () => {
     const opts = parseCliArgs([]);
     expect(opts.deepScan).toBe(false);
-    expect(opts.concurrency).toBe(5);
-    expect(opts.includeDev).toBe(false);
+    expect(opts.concurrency).toBeUndefined();
+    expect(opts.includeDev).toBeUndefined();
   });
 
   it('recognizes the --deep flag', () => {
@@ -47,6 +49,29 @@ describe('parseCliArgs', () => {
     expect(opts.deepScan).toBe(true);
     expect(opts.includeDev).toBe(true);
     expect(opts.concurrency).toBe(12);
+  });
+
+  it('parses the --output flag', () => {
+    const opts = parseCliArgs(['--output', 'report.json']);
+    expect(opts.outputFile).toBe('report.json');
+  });
+
+  it('parses the -o shorthand', () => {
+    const opts = parseCliArgs(['-o', 'report.txt']);
+    expect(opts.outputFile).toBe('report.txt');
+  });
+
+  it('parses --format', () => {
+    const opts = parseCliArgs(['--format', 'json']);
+    expect(opts.format).toBe('json');
+  });
+
+  it('parses the --verbose flag', () => {
+    expect(parseCliArgs(['--verbose']).verbose).toBe(true);
+  });
+
+  it('parses the -v shorthand', () => {
+    expect(parseCliArgs(['-v']).verbose).toBe(true);
   });
 });
 
@@ -235,5 +260,120 @@ describe('printReport', () => {
 
     const output = vi.mocked(console.log).mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('deep mode');
+  });
+});
+
+describe('formatJsonReport', () => {
+  it('returns valid JSON with summary and reports', () => {
+    const result = makeResult({
+      reports: [
+        {
+          name: 'test-pkg',
+          isDeclared: true,
+          isHallucination: false,
+          metadata: { exists: true, createdAt: '2020-01-01', latestVersion: '1.0.0' },
+          installedVersion: '1.0.0',
+          vulnerabilities: [{ id: 'GHSA-xxxx', severity: 'HIGH' }],
+          isTooNew: false,
+        },
+      ],
+    });
+
+    const json = formatJsonReport(result, { deepScan: false, concurrency: 5, includeDev: false });
+    const parsed = JSON.parse(json);
+
+    expect(parsed.summary.totalPackages).toBe(1);
+    expect(parsed.summary.vulnerabilities).toBe(1);
+    expect(parsed.reports).toHaveLength(1);
+    expect(parsed.reports[0].name).toBe('test-pkg');
+    expect(parsed.reports[0].vulnerabilities[0].id).toBe('GHSA-xxxx');
+  });
+
+  it('includes hallucinated packages in the report', () => {
+    const result = makeResult({
+      reports: [
+        {
+          name: 'fake-pkg',
+          isDeclared: false,
+          isHallucination: true,
+          metadata: null,
+          installedVersion: null,
+          vulnerabilities: [],
+          isTooNew: false,
+        },
+      ],
+    });
+
+    const json = formatJsonReport(result, { deepScan: false, concurrency: 5, includeDev: false });
+    const parsed = JSON.parse(json);
+
+    expect(parsed.summary.hallucinations).toBe(1);
+  });
+
+  it('includes transitive vulnerabilities', () => {
+    const result = makeResult({
+      transitiveVulns: [
+        {
+          name: 'transitive-pkg',
+          version: '2.0.0',
+          vulnerabilities: [{ id: 'GHSA-yyyy', summary: 'test vuln' }],
+          origin: 'direct-pkg@1.0.0',
+          parents: ['direct-pkg@1.0.0'],
+        },
+      ],
+    });
+
+    const json = formatJsonReport(result, { deepScan: true, concurrency: 5, includeDev: false });
+    const parsed = JSON.parse(json);
+
+    expect(parsed.transitiveVulnerabilities).toHaveLength(1);
+    expect(parsed.transitiveVulnerabilities[0].name).toBe('transitive-pkg');
+  });
+});
+
+describe('formatTextReport', () => {
+  it('returns plain text without ANSI codes', () => {
+    const result = makeResult({
+      reports: [
+        {
+          name: 'express',
+          isDeclared: true,
+          isHallucination: false,
+          metadata: { exists: true, createdAt: '2020-01-01', latestVersion: '4.18.2' },
+          installedVersion: '4.18.2',
+          vulnerabilities: [],
+          isTooNew: false,
+        },
+      ],
+    });
+
+    const text = formatTextReport(result, { deepScan: true, concurrency: 5, includeDev: false });
+
+    expect(text).toContain('Sentinel Report');
+    expect(text).toContain('express');
+    expect(text).not.toContain('\x1b');
+  });
+
+  it('reports hallucinated packages without ANSI codes', () => {
+    const result = makeResult({
+      reports: [
+        {
+          name: 'hallucinated-pkg',
+          isDeclared: false,
+          isHallucination: true,
+          metadata: null,
+          installedVersion: null,
+          vulnerabilities: [],
+          isTooNew: false,
+        },
+      ],
+    });
+
+    const text = formatTextReport(result, { deepScan: false, concurrency: 5, includeDev: false });
+
+    expect(text).toContain('AI HALLUCINATIONS');
+    expect(text).toContain('hallucinated-pkg');
+    expect(text).toContain('not found on npm');
+    expect(text).not.toContain('\x1b');
   });
 });

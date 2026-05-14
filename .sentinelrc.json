@@ -1,0 +1,8 @@
+{
+  "scanPatterns": ["src/**/*.{ts,js,tsx,jsx}", "scripts/**/*.ts"],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/*.test.ts"],
+  "newPackageThresholdHours": 24,
+  "concurrency": 5,
+  "includeDev": false,
+  "outputFormat": "json"
+}
