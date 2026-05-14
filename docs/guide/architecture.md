@@ -1,6 +1,6 @@
 # Architecture
 
-Sentinel-AI follows **Clean Architecture** with 4 layers, each with a single responsibility. Dependency injection in `src/main.ts` wires them together.
+Sentinel-AI follows **Clean Architecture** with 5 layers plus a DI container, each with a single responsibility. Dependency injection in `src/container.ts` wires them together.
 
 ## Layer overview
 
@@ -11,15 +11,20 @@ Sentinel-AI follows **Clean Architecture** with 4 layers, each with a single res
 │  TextFormatter.ts  main.ts  guard.ts                         │
 ├────────────────────────────────────────────────────────────┤
 │                    Application Layer                          │
-│  ScanProjectUseCase.ts  GuardUseCase.ts  services/            │
-│  container.ts                                                │
+│  ScanProjectUseCase.ts  services/                             │
+├────────────────────────────────────────────────────────────┤
+│                      Guard Layer                              │
+│  GuardUseCase.ts                                              │
 ├────────────────────────────────────────────────────────────┤
 │                  Infrastructure Layer                         │
 │  SwcScanner  FileSystemReader  VersionResolver               │
-│  NpmHttpClient  OsvHttpClient  Logger  ConfigLoader           │
+│  NpmHttpClient  OsvHttpClient  Logger                         │
 ├────────────────────────────────────────────────────────────┤
 │                     Domain Layer                              │
-│  entities.ts  repositories.ts  config.ts                     │
+│  entities.ts  repositories.ts  config.ts  (loadConfig)       │
+└────────────────────────────────────────────────────────────┘
+│                    DI Container                               │
+│  container.ts (wires all layers together)                     │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -71,12 +76,8 @@ The main orchestrator. Its `execute()` method:
 2. Reads `package.json` via `IFileSystemReader` for declared dependencies
 3. For each package, fetches npm metadata via `INpmClient` (concurrency-limited) to detect hallucinations and shadow code
 4. Resolves installed versions via `IVersionResolver`
-5. If `--deep`: collects transitive dependencies from lock file, builds origin map via `OriginTracker`, queries OSV batch API
+5. If `--deep`: collects transitive dependencies from lock file, builds origin map inline (tracking which direct dep owns each transitive dep), queries OSV batch API
 6. Returns a `ScanResult` with all reports, transitive vulnerabilities, and timing
-
-### OriginTracker
-
-Service that builds a map of which direct dependency owns each transitive dependency by scanning the `dependencies` field inside every direct package's lock file entry.
 
 ## CLI Layer
 
@@ -138,10 +139,10 @@ process.argv ──→ CliParser ──→ CliOptions │
                                       ├─ NpmHttpClient              → metadata (concurrency-limited)
                                       ├─ VersionResolver            → exact installed version
                                       │
-                                      ├─ (deep mode)
-                                      │   ├─ FileSystemReader       → transitive deps from lock
-                                      │   ├─ OriginTracker          → parent map
-                                      │   └─ OsvHttpClient          → batch vuln query
+                                       ├─ (deep mode)
+                                       │   ├─ FileSystemReader       → transitive deps from lock
+                                       │   ├─ (inline origin map)    → parent chain
+                                       │   └─ OsvHttpClient          → batch vuln query
                                       │
                                       ▼
                                  ScanResult
@@ -178,8 +179,8 @@ package-lock.json ──→ Exact versions + transitive deps
 fetchNpmMetadata(attempt = 1)
   ├─ Success → return data
   ├─ 404 → return null (hallucination)
-  ├─ 429 + attempt < 3 → sleep(1s * 2^attempt), retry
-  └─ Error + attempt < 3 → sleep(1s * 2^attempt), retry
+  ├─ 429 + attempt < 3 → sleep(1s * 2^(attempt-1)), retry
+  └─ Error + attempt < 3 → sleep(1s * 2^(attempt-1)), retry
 ```
 
 ## Color system (ANSI)

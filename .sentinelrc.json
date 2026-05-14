@@ -4,5 +4,5 @@
   "newPackageThresholdHours": 24,
   "concurrency": 5,
   "includeDev": false,
-  "outputFormat": "json"
+  "outputFormat": "text"
 }

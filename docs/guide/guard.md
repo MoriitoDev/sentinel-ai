@@ -47,7 +47,7 @@ You can also run the guard check manually without the interceptor:
 ```bash
 npx tsx src/guard.ts lodash react
 npx tsx src/guard.ts ai-slopsquatting        # hallucinated → blocked
-npm run guard lodash                          # via package script
+npm run guard -- lodash                        # via package script
 ```
 
 ## Scenarios

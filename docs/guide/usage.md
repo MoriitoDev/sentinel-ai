@@ -98,8 +98,8 @@ Sentinel-AI reads settings from `.sentinelrc.json` in the project root. If the f
 
 ```json
 {
-  "scanPatterns": ["src/**/*.{ts,js,tsx,jsx}"],
-  "ignorePatterns": ["**/node_modules/**", "**/dist/**"],
+  "scanPatterns": ["src/**/*.{ts,js,tsx,jsx}", "scripts/**/*.ts"],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/*.test.ts"],
   "newPackageThresholdHours": 72,
   "concurrency": 5,
   "includeDev": false,
