@@ -1,11 +1,27 @@
 {
   "name": "sentinel-ai",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "CLI tool to detect AI hallucinated packages and npm vulnerabilities",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "bin": {
+    "sentinel-ai": "./dist/main.js",
+    "sentinel": "./dist/main.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "build": "tsup src/main.ts src/guard.ts --format esm --dts --clean --out-dir dist && chmod +x dist/main.js dist/guard.js",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build && npm test",
+    "postversion": "git push && git push --tags",
     "scan": "npx tsx src/main.ts",
     "scan:deep": "npx tsx src/main.ts --deep",
     "guard": "npx tsx src/guard.ts",
@@ -13,14 +29,38 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "security",
+    "cli",
+    "npm",
+    "vulnerability",
+    "ai",
+    "hallucination",
+    "slopsquatting",
+    "supply-chain",
+    "dependency",
+    "scanner",
+    "audit"
+  ],
+  "author": "MoriitoDev",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MoriitoDev/sentinel-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MoriitoDev/sentinel-ai/issues"
+  },
+  "homepage": "https://github.com/MoriitoDev/sentinel-ai#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@catppuccin/vitepress": "^0.1.2",
     "@types/node": "^25.7.0",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "vitepress": "^1.6.4",

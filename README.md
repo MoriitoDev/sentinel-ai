@@ -1,5 +1,10 @@
 # Sentinel-AI
 
+[![npm version](https://badge.fury.io/js/sentinel-ai.svg)](https://www.npmjs.com/package/sentinel-ai)
+[![CI](https://github.com/MoriitoDev/sentinel-ai/workflows/CI/badge.svg)](https://github.com/MoriitoDev/sentinel-ai/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+
 A CLI tool to prevent **AI slopsquatting** (hallucinated package imports) and detect general vulnerabilities in your codebase.
 
 ## Features
