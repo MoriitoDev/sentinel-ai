@@ -4,6 +4,9 @@ export default defineConfig({
   entry: ['src/main.ts', 'src/guard.ts'],
   format: ['esm'],
   dts: true,
+  banner: {
+    js: '#!/usr/bin/env node',
+  },
   splitting: false,
   sourcemap: true,
   clean: true,

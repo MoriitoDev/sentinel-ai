@@ -1,12 +1,12 @@
 {
-  "name": "sentinel-ai",
-  "version": "1.0.0",
+  "name": "@moriito/sentinel-ai",
+  "version": "0.1.0",
   "description": "CLI tool to detect AI hallucinated packages and npm vulnerabilities",
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "bin": {
-    "sentinel-ai": "./dist/main.js",
-    "sentinel": "./dist/main.js"
+    "sentinel-ai": "dist/main.js",
+    "sentinel": "dist/main.js"
   },
   "files": [
     "dist/**/*",
@@ -47,7 +47,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/MoriitoDev/sentinel-ai.git"
+    "url": "git+https://github.com/MoriitoDev/sentinel-ai.git"
   },
   "bugs": {
     "url": "https://github.com/MoriitoDev/sentinel-ai/issues"
