@@ -1,6 +1,6 @@
 {
   "name": "@moriito/sentinel-ai",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "CLI tool to detect AI hallucinated packages and npm vulnerabilities",
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
