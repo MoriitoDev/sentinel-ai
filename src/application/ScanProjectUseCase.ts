@@ -1,20 +1,25 @@
 import {
     isPackageTooNew,
-    type CliOptions, type PackageReport, type TransitiveVulnReport, type Vulnerability,
+    type CliOptions, type PackageReport, type TransitiveVulnReport, type Vulnerability, type TyposquattingReport,
 } from '../domain/entities';
 import type { SentinelConfig } from '../domain/config';
 import type {
     IScanner, IFileSystemReader, IVersionResolver, INpmClient, IOsvClient,
 } from '../domain/repositories';
+import { TyposquattingService } from './services/TyposquattingService';
+import type { IPopularPackagesStore } from '../domain/repositories';
 
 export interface ScanResult {
     reports: PackageReport[];
     transitiveVulns: TransitiveVulnReport[];
     totalTransitiveCount: number;
     elapsedMs: number;
+    typosquattingReports: TyposquattingReport[];
 }
 
 export class ScanProjectUseCase {
+    private typosquattingService: TyposquattingService;
+
     constructor(
         private scanner: IScanner,
         private fileReader: IFileSystemReader,
@@ -22,7 +27,16 @@ export class ScanProjectUseCase {
         private npmClient: INpmClient,
         private osvClient: IOsvClient,
         private config: SentinelConfig,
-    ) {}
+        private popularPackagesStore?: IPopularPackagesStore,
+    ) {
+        // Initialize typosquatting service if store is provided
+        if (this.popularPackagesStore) {
+            this.typosquattingService = new TyposquattingService(
+                this.popularPackagesStore,
+                this.config.typosquatting
+            );
+        }
+    }
 
     async execute(options: CliOptions): Promise<ScanResult> {
         const startTime = Date.now();
@@ -32,8 +46,17 @@ export class ScanProjectUseCase {
 
         const declaredDeps = await this.fileReader.getDeclaredDependencies();
 
+        // Run typosquatting detection in parallel with npm metadata fetching
         const effectiveConcurrency = options.concurrency ?? this.config.concurrency;
-        const metadataResults = await this.npmClient.fetchAll(usedDeps, effectiveConcurrency);
+        const metadataPromise = this.npmClient.fetchAll(usedDeps, effectiveConcurrency);
+        const typosquattingPromise = this.typosquattingService
+            ? this.typosquattingService.detect(usedDeps)
+            : Promise.resolve([]);
+
+        const [metadataResults, typosquattingReports] = await Promise.all([
+            metadataPromise,
+            typosquattingPromise,
+        ]);
 
         const reports: PackageReport[] = [];
         const osvEntries: Array<{ name: string; version: string | null }> = [];
@@ -127,6 +150,7 @@ export class ScanProjectUseCase {
             transitiveVulns,
             totalTransitiveCount: allTransitive.length,
             elapsedMs: Date.now() - startTime,
+            typosquattingReports,
         };
     }
 }

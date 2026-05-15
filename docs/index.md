@@ -32,4 +32,7 @@ features:
   - icon: 🧩
     title: Transitive Dependency Analysis
     details: Reads package-lock.json to scan deep dependencies — shows origin for each transitive vuln.
+  - icon: 🎯
+    title: Typosquatting Detection
+    details: Detects packages with names suspiciously similar to popular npm packages — catches lodah vs lodash.
 ---

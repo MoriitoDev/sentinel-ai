@@ -35,4 +35,64 @@ export class NpmHttpClient implements INpmClient {
         }
         return results;
     }
+
+    async fetchPopularPackages(limit: number = 500): Promise<string[]> {
+        const MAX_RETRIES = 3;
+        const allPackages = new Set<string>();
+        
+        // Try multiple search queries to gather popular packages
+        const queries = [
+            'react', 'vue', 'angular', 'express', 'lodash',
+            'framework', 'library', 'tool', 'cli', 'utils'
+        ];
+        
+        for (const query of queries) {
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    const res = await fetch(
+                        `https://api.npms.io/v2/search?q=${encodeURIComponent(query)}&size=50`,
+                        {
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                        }
+                    );
+                    
+                    if (res.status === 429 && attempt < MAX_RETRIES) {
+                        await sleep(2000 * attempt);
+                        continue;
+                    }
+                    
+                    if (!res.ok) {
+                        throw new Error(`npms.io API returned ${res.status}`);
+                    }
+                    
+                    const data = await res.json();
+                    
+                    if (data.results && Array.isArray(data.results)) {
+                        for (const result of data.results) {
+                            if (result.package?.name) {
+                                allPackages.add(result.package.name);
+                            }
+                        }
+                    }
+                    
+                    // Success, break retry loop
+                    break;
+                } catch (err) {
+                    if (attempt === MAX_RETRIES) {
+                        console.warn(`Warning: Failed to fetch packages for query '${query}': ${err}`);
+                    }
+                    await sleep(1000 * attempt);
+                }
+            }
+            
+            // Stop if we have enough packages
+            if (allPackages.size >= limit) {
+                break;
+            }
+        }
+        
+        return Array.from(allPackages).slice(0, limit);
+    }
 }

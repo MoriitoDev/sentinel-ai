@@ -1,6 +1,12 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+export interface TyposquattingConfig {
+  enabled: boolean;
+  threshold: number;
+  minPackageLength: number;
+}
+
 export interface SentinelConfig {
   scanPatterns: string[];
   ignorePatterns: string[];
@@ -9,6 +15,7 @@ export interface SentinelConfig {
   includeDev: boolean;
   outputFormat: 'text' | 'json';
   outputFile?: string;
+  typosquatting: TyposquattingConfig;
 }
 
 export const DEFAULT_CONFIG: SentinelConfig = {
@@ -18,6 +25,11 @@ export const DEFAULT_CONFIG: SentinelConfig = {
   concurrency: 5,
   includeDev: false,
   outputFormat: 'text',
+  typosquatting: {
+    enabled: true,
+    threshold: 0.85,
+    minPackageLength: 3,
+  },
 };
 
 const CONFIG_FILE = '.sentinelrc.json';
@@ -46,6 +58,20 @@ export function loadConfig(cwd: string = process.cwd()): SentinelConfig {
     if (userConfig.outputFormat !== undefined && !['text', 'json'].includes(userConfig.outputFormat)) {
       console.warn(`Warning: outputFormat must be "text" or "json", using default ("text")`);
       userConfig.outputFormat = DEFAULT_CONFIG.outputFormat;
+    }
+
+    // Validate typosquatting config
+    if (userConfig.typosquatting) {
+      if (userConfig.typosquatting.threshold !== undefined) {
+        if (userConfig.typosquatting.threshold < 0 || userConfig.typosquatting.threshold > 1) {
+          console.warn(`Warning: typosquatting.threshold must be between 0 and 1, using default (${DEFAULT_CONFIG.typosquatting.threshold})`);
+          userConfig.typosquatting.threshold = DEFAULT_CONFIG.typosquatting.threshold;
+        }
+      }
+      if (userConfig.typosquatting.minPackageLength !== undefined && userConfig.typosquatting.minPackageLength < 1) {
+        console.warn(`Warning: typosquatting.minPackageLength must be at least 1, using default (${DEFAULT_CONFIG.typosquatting.minPackageLength})`);
+        userConfig.typosquatting.minPackageLength = DEFAULT_CONFIG.typosquatting.minPackageLength;
+      }
     }
 
     return { ...DEFAULT_CONFIG, ...userConfig };

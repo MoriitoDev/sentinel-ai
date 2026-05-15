@@ -1,10 +1,10 @@
-import { isMaliciousEntry, type PackageReport, type TransitiveVulnReport, type CliOptions } from '../domain/entities';
+import { isMaliciousEntry, type PackageReport, type TransitiveVulnReport, type CliOptions, type TyposquattingReport } from '../domain/entities';
 import type { ScanResult } from '../application/ScanProjectUseCase';
 
 const RULER = '\u2500'.repeat(56);
 
 export function formatTextReport(result: ScanResult, options: CliOptions): string {
-    const { reports, transitiveVulns, totalTransitiveCount, elapsedMs } = result;
+    const { reports, transitiveVulns, totalTransitiveCount, elapsedMs, typosquattingReports } = result;
     const hallucinated = reports.filter(r => r.isHallucination);
     const shadow = reports.filter(r => !r.isDeclared && !r.isHallucination);
     const withVulns = reports.filter(r => r.isDeclared && !r.isHallucination && r.vulnerabilities.length > 0);
@@ -37,6 +37,15 @@ export function formatTextReport(result: ScanResult, options: CliOptions): strin
             if (options.deepScan && realVulns.length > 0) {
                 lines.push(`   \\-- vulnerabilities: ${realVulns.length}`);
             }
+        }
+        lines.push('');
+    }
+
+    if (typosquattingReports.length > 0) {
+        lines.push(` TYPO SQUATTING SUSPECTS (${typosquattingReports.length})`);
+        for (const t of typosquattingReports) {
+            const score = Math.round(t.similarityScore * 100);
+            lines.push(`   ${t.name.padEnd(24)} \u2190 similar to ${t.similarTo} (${score}%)`);
         }
         lines.push('');
     }

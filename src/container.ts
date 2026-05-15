@@ -1,6 +1,6 @@
 import type {
   IScanner, IFileSystemReader, IVersionResolver,
-  INpmClient, IOsvClient,
+  INpmClient, IOsvClient, IPopularPackagesStore,
 } from './domain/repositories';
 import type { SentinelConfig } from './domain/config';
 import { DEFAULT_CONFIG } from './domain/config';
@@ -9,6 +9,7 @@ import { FileSystemReader } from './infrastructure/FileSystemReader';
 import { VersionResolver } from './infrastructure/VersionResolver';
 import { NpmHttpClient } from './infrastructure/NpmHttpClient';
 import { OsvHttpClient } from './infrastructure/OsvHttpClient';
+import { PopularPackagesStore } from './infrastructure/PopularPackagesStore';
 import { ScanProjectUseCase } from './application/ScanProjectUseCase';
 import { GuardUseCase } from './guard/GuardUseCase';
 
@@ -19,6 +20,7 @@ export interface Container {
   versionResolver: IVersionResolver;
   npmClient: INpmClient;
   osvClient: IOsvClient;
+  popularPackagesStore: IPopularPackagesStore;
   scanUseCase: ScanProjectUseCase;
   guardUseCase: GuardUseCase;
 }
@@ -27,6 +29,7 @@ export function createContainer(config: SentinelConfig = DEFAULT_CONFIG): Contai
   const fileReader = new FileSystemReader();
   const npmClient = new NpmHttpClient();
   const osvClient = new OsvHttpClient();
+  const popularPackagesStore = new PopularPackagesStore(npmClient);
 
   return {
     config,
@@ -35,6 +38,7 @@ export function createContainer(config: SentinelConfig = DEFAULT_CONFIG): Contai
     versionResolver: new VersionResolver(fileReader),
     npmClient,
     osvClient,
+    popularPackagesStore,
     scanUseCase: new ScanProjectUseCase(
       new SwcScanner(),
       fileReader,
@@ -42,6 +46,7 @@ export function createContainer(config: SentinelConfig = DEFAULT_CONFIG): Contai
       npmClient,
       osvClient,
       config,
+      popularPackagesStore,
     ),
     guardUseCase: new GuardUseCase(npmClient, osvClient),
   };

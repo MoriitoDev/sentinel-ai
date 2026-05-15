@@ -4,12 +4,14 @@
 
 | Flag | Alias | Description | Default |
 |------|-------|-------------|---------|
-| `--deep` | `-d` | Enable full vulnerability scan (age check + OSV + transitive deps) | off |
+| `--deep` | `-d` | Enable full vulnerability scan (age check + OSV + transitive deps + typosquatting) | off |
 | `--concurrency` | `-c` | Max parallel npm registry requests | `5` |
 | `--include-dev` | `-i` | Include dev-only transitive dependencies in deep mode | off |
 | `--output` | `-o` | Save report to file (always prints to console too) | — |
 | `--format` | `-f` | Output format: `text` (ANSI) or `json` | `text` |
 | `--verbose` | `-v` | Enable debug logging to stderr | off |
+| `--typosquatting-threshold` | — | Similarity threshold (0-1) for typosquatting detection | `0.85` |
+| `--refresh-popular-packages` | — | Force refresh of the popular packages cache | off |
 
 ## Modes
 
@@ -30,6 +32,7 @@ Performs everything in standard mode, plus:
 - **Vulnerability scan** — queries the OSV database for all packages (single batch request)
 - **Transitive dependencies** — scans ALL dependencies in `package-lock.json` (not just direct imports)
 - **Malicious package detection** — alerts on known malware entries (MAL-*) with a prominent `[MALICIOUS]` badge
+- **Typosquatting detection** — spots packages named suspiciously like popular packages (Levenshtein distance)
 - **Clean package reporting** — shows which declared packages have zero vulnerabilities
 - **Version resolution** — uses exact versions from `package-lock.json` before falling back to `node_modules`
 
@@ -55,6 +58,20 @@ npx tsx src/main.ts --concurrency 2
 
 # Fast for large projects
 npx tsx src/main.ts --deep --concurrency 20
+```
+
+### Typosquatting threshold (`--typosquatting-threshold VALUE`)
+
+Controls how sensitive the typosquatting detection is. A value of `0.9` means 90% similarity is required to flag a package. Lower values catch more potential typosquatting but may produce false positives.
+
+```bash
+npx tsx src/main.ts --deep --typosquatting-threshold 0.8
+```
+
+Use `--refresh-popular-packages` to clear the local cache and re-fetch the popular packages list from npms.io:
+
+```bash
+npx tsx src/main.ts --deep --refresh-popular-packages
 ```
 
 ### Output to file (`--output PATH`)
@@ -103,7 +120,12 @@ Sentinel-AI reads settings from `.sentinelrc.json` in the project root. If the f
   "newPackageThresholdHours": 72,
   "concurrency": 5,
   "includeDev": false,
-  "outputFormat": "text"
+  "outputFormat": "text",
+  "typosquatting": {
+    "enabled": true,
+    "threshold": 0.85,
+    "minPackageLength": 3
+  }
 }
 ```
 
@@ -137,7 +159,7 @@ Sentinel-AI resolves the installed version of each package in priority order:
 
 ```
 ────────────────────────────────────────────────────────
- Sentinel Report  — 34 packages, 951ms, deep mode
+ Sentinel Report  — 36 packages, 765ms, deep mode
 ────────────────────────────────────────────────────────
 
  AI HALLUCINATIONS (1)
@@ -145,6 +167,10 @@ Sentinel-AI resolves the installed version of each package in priority order:
 
  SHADOW CODE (1)
    @swc
+
+ TYPO SQUATTING SUSPECTS (2)
+   expres                   ← similar to express (86%)
+   lodah                    ← similar to lodash (83%)
 
  CLEAN (1)
    fast-glob            v3.3.3

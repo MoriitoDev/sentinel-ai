@@ -81,6 +81,7 @@ function makeResult(overrides: Partial<ScanResult> = {}): ScanResult {
     transitiveVulns: [],
     totalTransitiveCount: 0,
     elapsedMs: 100,
+    typosquattingReports: [],
     ...overrides,
   };
 }

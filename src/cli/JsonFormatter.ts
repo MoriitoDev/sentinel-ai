@@ -2,7 +2,7 @@ import type { ScanResult } from '../application/ScanProjectUseCase';
 import type { CliOptions } from '../domain/entities';
 
 export function formatJsonReport(result: ScanResult, options: CliOptions): string {
-    const { reports, transitiveVulns, totalTransitiveCount, elapsedMs } = result;
+    const { reports, transitiveVulns, totalTransitiveCount, elapsedMs, typosquattingReports } = result;
     const hallucinated = reports.filter(r => r.isHallucination);
     const shadow = reports.filter(r => !r.isDeclared && !r.isHallucination);
     const withVulns = reports.filter(r => r.isDeclared && !r.isHallucination && r.vulnerabilities.length > 0);
@@ -15,6 +15,7 @@ export function formatJsonReport(result: ScanResult, options: CliOptions): strin
             totalPackages: reports.length + totalTransitiveCount,
             hallucinations: hallucinated.length,
             shadowCode: shadow.length,
+            typosquatting: typosquattingReports.length,
             vulnerabilities: withVulns.reduce((acc, r) => acc + r.vulnerabilities.length, 0),
             transitiveVulnerabilities: transitiveVulns.length,
         },
@@ -30,6 +31,12 @@ export function formatJsonReport(result: ScanResult, options: CliOptions): strin
                 summary: v.summary,
                 severity: v.database_specific?.severity || v.severity,
             })),
+        })),
+        typosquatting: typosquattingReports.map(t => ({
+            name: t.name,
+            similarTo: t.similarTo,
+            similarityScore: Math.round(t.similarityScore * 100) / 100,
+            distance: t.distance,
         })),
         transitiveVulnerabilities: transitiveVulns.map(tv => ({
             name: tv.name,

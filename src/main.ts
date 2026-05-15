@@ -20,6 +20,16 @@ const options = {
     outputFile: cliArgs.outputFile ?? fileConfig.outputFile,
 };
 
+// Handle cache refresh for popular packages
+if (cliArgs.refreshPopularPackages) {
+    container.popularPackagesStore.clearCache();
+}
+
+// Override typosquatting threshold from CLI if provided
+if (cliArgs.typosquattingThreshold !== undefined) {
+    fileConfig.typosquatting.threshold = cliArgs.typosquattingThreshold;
+}
+
 const modeLabel = options.deepScan ? 'deep mode' : 'standard mode';
 const flags = [`concurrency=${options.concurrency}`];
 if (options.deepScan && options.includeDev) flags.push('dev-transitive=on');

@@ -24,6 +24,42 @@ A package that **exists on npm** but is **not declared in `package.json`**. This
    @swc
 ```
 
+## Typosquatting
+
+A **typosquatting** package is one that **exists on npm** but has a name suspiciously similar to a popular package — designed to trick developers who mistype. Example: `lodah` instead of `lodash`, or `expres` instead of `express`.
+
+Sentinel-AI uses the [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) algorithm to compute name similarity against a list of the 500 most popular npm packages (fetched from the [npms.io](https://npms.io) registry). When the similarity score exceeds the configured threshold (default: 85%), the package is flagged.
+
+```
+ TYPO SQUATTING SUSPECTS (2)
+   expres                   ← similar to express (86%)
+   lodah                    ← similar to lodash (83%)
+```
+
+Unlike **AI Hallucinations** (packages that do not exist), typosquatting packages are real — they exist on npm — making them potentially more dangerous because an `npm install` will succeed and the malicious code will run.
+
+### How it works
+
+1. On first run, Sentinel-AI fetches the top ~500 popular packages from npms.io
+2. The list is cached locally in `.sentinel/popular-packages.json` (24h TTL)
+3. Each imported package name is compared against this list using Levenshtein distance
+4. If similarity exceeds the threshold, the package is reported as a suspect
+5. Scoped packages (`@scope/name`) are supported — both scope and name are compared
+
+### Configuration
+
+The threshold is configurable via CLI (`--typosquatting-threshold`) or `.sentinelrc.json`:
+
+```json
+{
+  "typosquatting": {
+    "enabled": true,
+    "threshold": 0.85,
+    "minPackageLength": 3
+  }
+}
+```
+
 ## Node.js Built-in Modules
 
 Packages like `fs`, `path`, `crypto` are Node.js runtime modules, not npm packages. Sentinel-AI automatically filters them out to avoid false positives. Both plain names (`fs`) and the `node:` prefixed form (`node:fs`) are recognized and ignored.

@@ -1,4 +1,4 @@
-import { isMaliciousEntry, type PackageReport, type TransitiveVulnReport, type CliOptions } from '../domain/entities';
+import { isMaliciousEntry, type PackageReport, type TransitiveVulnReport, type CliOptions, type TyposquattingReport } from '../domain/entities';
 import type { ScanResult } from '../application/ScanProjectUseCase';
 
 // ── ANSI colors ───────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ const c = {
 const RULER = '\u2500'.repeat(56);
 
 export function printReport(result: ScanResult, options: CliOptions): void {
-    const { reports, transitiveVulns, totalTransitiveCount, elapsedMs } = result;
+    const { reports, transitiveVulns, totalTransitiveCount, elapsedMs, typosquattingReports } = result;
     const hallucinated = reports.filter(r => r.isHallucination);
     const shadow       = reports.filter(r => !r.isDeclared && !r.isHallucination);
     const withVulns    = reports.filter(r => r.isDeclared && !r.isHallucination && r.vulnerabilities.length > 0);
@@ -47,6 +47,16 @@ export function printReport(result: ScanResult, options: CliOptions): void {
             if (options.deepScan && realVulns.length > 0) {
                 console.log(`   ${c.dim('  \u2514 vulnerabilities:')} ${realVulns.length}`);
             }
+        }
+        console.log('');
+    }
+
+    // 2.5 TYPO SQUATTING
+    if (typosquattingReports.length > 0) {
+        console.log(` ${c.orange(c.bold(`TYPO SQUATTING SUSPECTS (${typosquattingReports.length})`))}`);
+        for (const t of typosquattingReports) {
+            const score = Math.round(t.similarityScore * 100);
+            console.log(`   ${c.orange(t.name.padEnd(24))} ${c.dim('\u2190 similar to')} ${c.yellow(t.similarTo)} ${c.dim(`(${score}%)`)}`);
         }
         console.log('');
     }

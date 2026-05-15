@@ -11,6 +11,7 @@ A CLI tool to prevent **AI slopsquatting** (hallucinated package imports) and de
 
 - **AI Hallucination Detection** — catches imports of packages that do not exist on npm
 - **Shadow Code Detection** — flags packages used in imports but missing from `package.json`
+- **Typosquatting Detection** — detects packages with names suspiciously similar to popular ones (e.g., `lodah` vs `lodash`)
 - **Vulnerability Scan** — checks all packages against the OSV database (single batch request)
 - **Malicious Package Alerts** — warns on packages with known malware (MAL-* entries)
 - **Package Age Check** — flags suspiciously new packages (< 72 hours on npm)
@@ -36,12 +37,14 @@ npm run scan:deep
 
 | Flag | Alias | Description | Default |
 |------|-------|-------------|---------|
-| `--deep` | `-d` | Enable full scanning (age + vulns + transitive deps) | off |
+| `--deep` | `-d` | Enable full scanning (age + vulns + transitive deps + typosquatting) | off |
 | `--concurrency` | `-c` | Max parallel requests to npm | `5` |
 | `--include-dev` | `-i` | Include dev-only transitive deps in deep mode | off |
 | `--output` | `-o` | Save report to file (plain text or JSON, console still shows) | — |
 | `--format` | `-f` | Output format: `text` (ANSI) or `json` | `text` |
 | `--verbose` | `-v` | Enable debug logging | off |
+| `--typosquatting-threshold` | — | Similarity threshold for typosquatting (0-1) | `0.85` |
+| `--refresh-popular-packages` | — | Force refresh of popular packages cache | off |
 
 ### Standard mode
 
@@ -73,6 +76,10 @@ npx tsx src/main.ts --deep --concurrency 10
  SHADOW CODE (1)
    @swc
 
+ TYPO SQUATTING SUSPECTS (2)
+   expres                   ← similar to express (86%)
+   lodah                    ← similar to lodash (83%)
+
  VULNERABILITIES (0)
 
  CLEAN (2)
@@ -102,11 +109,22 @@ Create `.sentinelrc.json` in the project root to set defaults:
 {
   "concurrency": 10,
   "includeDev": true,
-  "outputFormat": "json"
+  "outputFormat": "json",
+  "typosquatting": {
+    "enabled": true,
+    "threshold": 0.85,
+    "minPackageLength": 3
+  }
 }
 ```
 
 CLI flags always override config file values.
+
+### Typosquatting Detection
+
+Typosquatting detection uses the [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) algorithm to compare package names against a curated list of the 500 most popular npm packages. When a package name is suspiciously similar (default: 85% similarity) to a popular package, it's flagged as a potential typosquatting attempt.
+
+Popular packages are cached in `.sentinel/popular-packages.json` for 24 hours. Use `--refresh-popular-packages` to force a refresh.
 
 ## Documentation
 

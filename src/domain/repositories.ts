@@ -17,8 +17,15 @@ export interface IVersionResolver {
 export interface INpmClient {
     fetchMetadata(pkg: string): Promise<PackageMetadata | null>;
     fetchAll(pkgs: string[], concurrency: number): Promise<Array<PackageMetadata | null>>;
+    fetchPopularPackages(limit?: number): Promise<string[]>;
 }
 
 export interface IOsvClient {
     queryBatch(entries: Array<{ name: string; version: string | null }>): Promise<Map<string, Vulnerability[]>>;
+}
+
+export interface IPopularPackagesStore {
+    getPopularPackages(forceRefresh?: boolean): Promise<string[]>;
+    clearCache(): Promise<void>;
+    isCacheValid(): boolean;
 }
