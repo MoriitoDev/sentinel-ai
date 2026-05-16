@@ -1,6 +1,6 @@
 {
   "name": "@moriito/sentinel-ai",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "CLI tool to detect AI hallucinated packages and npm vulnerabilities",
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
@@ -17,8 +17,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsup src/main.ts src/guard.ts --format esm --dts --clean --out-dir dist && chmod +x dist/main.js dist/guard.js",
-    "clean": "rm -rf dist",
+    "build": "tsup src/main.ts src/guard.ts --format esm --dts --clean --out-dir dist && npx shx chmod +x dist/main.js dist/guard.js",
+    "clean": "npx rimraf dist",
     "prebuild": "npm run clean",
     "prepublishOnly": "npm run build && npm test",
     "postversion": "git push && git push --tags",
