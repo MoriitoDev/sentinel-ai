@@ -19,7 +19,7 @@ export interface SentinelConfig {
 }
 
 export const DEFAULT_CONFIG: SentinelConfig = {
-  scanPatterns: ['src/**/*.{ts,js,tsx,jsx}'],
+  scanPatterns: ['src/**/*.{ts,js,tsx,jsx}', '*.{ts,js,tsx,jsx}'],
   ignorePatterns: ['**/node_modules/**', '**/dist/**'],
   newPackageThresholdHours: 72,
   concurrency: 5,

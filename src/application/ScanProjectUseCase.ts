@@ -45,12 +45,13 @@ export class ScanProjectUseCase {
         const usedDeps = await this.scanner.scan(globPattern, this.config.ignorePatterns);
 
         const declaredDeps = await this.fileReader.getDeclaredDependencies();
+        const allDeps = [...new Set([...usedDeps, ...declaredDeps])];
 
         // Run typosquatting detection in parallel with npm metadata fetching
         const effectiveConcurrency = options.concurrency ?? this.config.concurrency;
-        const metadataPromise = this.npmClient.fetchAll(usedDeps, effectiveConcurrency);
+        const metadataPromise = this.npmClient.fetchAll(allDeps, effectiveConcurrency);
         const typosquattingPromise = this.typosquattingService
-            ? this.typosquattingService.detect(usedDeps)
+            ? this.typosquattingService.detect(allDeps)
             : Promise.resolve([]);
 
         const [metadataResults, typosquattingReports] = await Promise.all([
@@ -61,8 +62,8 @@ export class ScanProjectUseCase {
         const reports: PackageReport[] = [];
         const osvEntries: Array<{ name: string; version: string | null }> = [];
 
-        for (let i = 0; i < usedDeps.length; i++) {
-            const name = usedDeps[i];
+        for (let i = 0; i < allDeps.length; i++) {
+            const name = allDeps[i];
             const meta = metadataResults[i];
             const isDeclared = declaredDeps.has(name);
 
@@ -88,7 +89,7 @@ export class ScanProjectUseCase {
         const lock = await this.fileReader.getPackageLock();
         const allTransitive: typeof osvEntries = [];
         let transitiveVulns: TransitiveVulnReport[] = [];
-        const directPkgs = new Set([...usedDeps, ...declaredDeps]);
+        const directPkgs = new Set(allDeps);
 
         if (options.deepScan) {
             const effectiveIncludeDev = options.includeDev ?? this.config.includeDev;
