@@ -4,6 +4,7 @@
 [![CI](https://github.com/MoriitoDev/sentinel-ai/workflows/CI/badge.svg)](https://github.com/MoriitoDev/sentinel-ai/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Docs](https://img.shields.io/badge/docs-sentinel--ai--npm.vercel.app-blue)](https://sentinel-ai-npm.vercel.app/)
 
 A CLI tool to prevent **AI slopsquatting** (hallucinated package imports) and detect general vulnerabilities in your codebase.
 
@@ -145,7 +146,9 @@ Popular packages are cached in `.sentinel/popular-packages.json` for 24 hours. U
 
 ## Documentation
 
-Full documentation is available as a VitePress site. To run it locally:
+Full documentation is available at [sentinel-ai-npm.vercel.app](https://sentinel-ai-npm.vercel.app/).
+
+To run the VitePress docs locally:
 
 ```bash
 npm run docs:dev

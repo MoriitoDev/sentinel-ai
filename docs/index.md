@@ -36,3 +36,21 @@ features:
     title: Typosquatting Detection
     details: Detects packages with names suspiciously similar to popular npm packages — catches lodah vs lodash.
 ---
+
+## Getting Started
+
+### Install
+
+```bash
+npm i @moriito/sentinel-ai
+```
+
+### Run a scan
+
+```bash
+# Basic scan (hallucinations + shadow code)
+npx sentinel
+
+# Full vulnerability scan (ages + OSV + transitive deps + typosquatting)
+npx sentinel --deep
+```
