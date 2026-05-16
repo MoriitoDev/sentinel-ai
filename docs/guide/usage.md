@@ -1,5 +1,14 @@
 # Usage
 
+After installing the package (`npm i @moriito/sentinel-ai`), run it with `npx sentinel`:
+
+```bash
+npx sentinel [flags]
+npx sentinel --deep --concurrency 10
+```
+
+For local development, replace `npx sentinel` with `npx tsx src/main.ts`.
+
 ## Command-line flags
 
 | Flag | Alias | Description | Default |
@@ -22,7 +31,7 @@ Scans your source code and reports:
 - **Shadow Code** — packages that exist on npm but are not declared in `package.json`
 
 ```bash
-npx tsx src/main.ts
+npx sentinel
 ```
 
 ### Deep mode (`--deep`)
@@ -37,7 +46,7 @@ Performs everything in standard mode, plus:
 - **Version resolution** — uses exact versions from `package-lock.json` before falling back to `node_modules`
 
 ```bash
-npx tsx src/main.ts --deep
+npx sentinel --deep
 ```
 
 ### Including dev-only transitive deps (`--include-dev`)
@@ -45,7 +54,7 @@ npx tsx src/main.ts --deep
 By default, deep mode only scans production transitive dependencies. Use `--include-dev` to also scan dev-only transitive deps (types, build tools, etc.).
 
 ```bash
-npx tsx src/main.ts --deep --include-dev
+npx sentinel --deep --include-dev
 ```
 
 ### Concurrency control (`--concurrency VALUE`)
@@ -54,10 +63,10 @@ Controls how many parallel requests are made to the npm registry. Lower values r
 
 ```bash
 # Slow and cautious
-npx tsx src/main.ts --concurrency 2
+npx sentinel --concurrency 2
 
 # Fast for large projects
-npx tsx src/main.ts --deep --concurrency 20
+npx sentinel --deep --concurrency 20
 ```
 
 ### Typosquatting threshold (`--typosquatting-threshold VALUE`)
@@ -65,13 +74,13 @@ npx tsx src/main.ts --deep --concurrency 20
 Controls how sensitive the typosquatting detection is. A value of `0.9` means 90% similarity is required to flag a package. Lower values catch more potential typosquatting but may produce false positives.
 
 ```bash
-npx tsx src/main.ts --deep --typosquatting-threshold 0.8
+npx sentinel --deep --typosquatting-threshold 0.8
 ```
 
 Use `--refresh-popular-packages` to clear the local cache and re-fetch the popular packages list from npms.io:
 
 ```bash
-npx tsx src/main.ts --deep --refresh-popular-packages
+npx sentinel --deep --refresh-popular-packages
 ```
 
 ### Output to file (`--output PATH`)
@@ -83,10 +92,10 @@ Saves a copy of the report to a file while still printing the colorized output t
 
 ```bash
 # Plain text report
-npx tsx src/main.ts --output report.txt
+npx sentinel --output report.txt
 
 # JSON report with full deep scan
-npx tsx src/main.ts --deep --format json --output report.json
+npx sentinel --deep --format json --output report.json
 ```
 
 ### JSON output (`--format json`)
@@ -95,10 +104,10 @@ Prints the report as structured JSON instead of the colorized table. Useful for 
 
 ```bash
 # JSON to stdout
-npx tsx src/main.ts --deep --format json
+npx sentinel --deep --format json
 
 # JSON to file (console still shows colorized output)
-npx tsx src/main.ts --deep --format json --output report.json
+npx sentinel --deep --format json --output report.json
 ```
 
 ### Verbose logging (`--verbose`)
@@ -106,7 +115,7 @@ npx tsx src/main.ts --deep --format json --output report.json
 Enables debug-level logging to stderr for troubleshooting:
 
 ```bash
-npx tsx src/main.ts --verbose
+npx sentinel --verbose
 ```
 
 ## Configuration file

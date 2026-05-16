@@ -1,35 +1,47 @@
 # Installation
 
-Sentinel-AI is currently in development and not published to npm. Clone the repository and run it directly with `tsx`.
+## Via npm (recommended)
 
-## Requirements
+Install the package in your project:
+
+```bash
+npm i @moriito/sentinel-ai
+```
+
+Run a scan:
+
+```bash
+# Basic scan (hallucinations + shadow code)
+npx sentinel
+
+# Deep scan (vulnerabilities + transitive deps + typosquatting)
+npx sentinel --deep
+
+# With options
+npx sentinel --deep --concurrency 10 --include-dev
+```
+
+## Local development
+
+Clone the repository and run it directly with `tsx`:
+
+### Requirements
 
 - **Node.js** v18 or higher (native `fetch` support)
 - **npm** (comes with Node.js)
 
-## Setup
+### Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/MoriitoDev/sentinel-ai.git
 cd sentinel-ai
-
-# Install dependencies
 npm install
 
-# Basic scan (hallucinations + shadow code only)
+# Basic scan
 npm run scan
 
 # Full vulnerability scan
 npm run scan:deep
-```
-
-## Running directly
-
-You can also invoke `tsx` directly with any flags:
-
-```bash
-npx tsx src/main.ts --deep --concurrency 10
 ```
 
 ## Next steps

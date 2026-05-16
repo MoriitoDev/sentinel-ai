@@ -21,15 +21,26 @@ A CLI tool to prevent **AI slopsquatting** (hallucinated package imports) and de
 
 ## Quick Start
 
+### Install as a dependency (recommended)
+
+```bash
+npm i @moriito/sentinel-ai
+
+# Basic scan
+npx sentinel
+
+# Full vulnerability scan
+npx sentinel --deep
+```
+
+### Local development
+
 ```bash
 git clone https://github.com/MoriitoDev/sentinel-ai.git
 cd sentinel-ai
 npm install
 
-# Basic scan
 npm run scan
-
-# Full vulnerability scan
 npm run scan:deep
 ```
 
@@ -51,7 +62,10 @@ npm run scan:deep
 Only checks for hallucinations and shadow code:
 
 ```bash
-npm run scan
+# Via npm dependency
+npx sentinel
+
+# Or locally: npm run scan
 ```
 
 ### Deep mode
@@ -59,7 +73,10 @@ npm run scan
 Adds age checks and OSV vulnerability scanning for all packages:
 
 ```bash
-npm run scan:deep
+# Via npm dependency
+npx sentinel --deep
+
+# Or locally: npm run scan:deep
 npx tsx src/main.ts --deep --concurrency 10
 ```
 
@@ -93,10 +110,10 @@ npx tsx src/main.ts --deep --concurrency 10
 
 ```bash
 # Default text report (no ANSI codes)
-npm run scan -- --output report.txt
+npx sentinel --output report.txt
 
 # JSON report
-npm run scan:deep -- --format json --output report.json
+npx sentinel --deep --format json --output report.json
 ```
 
 The console always shows the colorized output. The file receives a clean copy.
